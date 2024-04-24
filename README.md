@@ -30,6 +30,17 @@ Abstract: *Radiance Field methods have recently revolutionized novel-view synthe
 </section>
 
 
+## Docker Environment Setup
+
+./gaussian_splatting_env.sh
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+cd submodules/diff-gaussian-rasterization/
+python setup.py install
+cd ../simple-knn/
+python setup.py install
+cd /src
+python train.py -s /media/datasets/gaussian_splatting/tandt_db/tandt/truck
 
 ## Funding and Acknowledgments
 
