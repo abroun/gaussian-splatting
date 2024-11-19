@@ -42,6 +42,11 @@ python setup.py install
 cd /src
 python train.py -s /media/datasets/gaussian_splatting/tandt_db/tandt/truck
 
+python train.py -s /media/datasets/tanks_and_temples/image_sets/Truck/truck_export/ --iterations 7000
+python train.py -s /media/datasets/lixel_k1/2024-11-06_OutsideMalhamWay/ResultData2024-11-06-110615_OutsideMalhamWay_0/2024-11-06-110615_OutsideMalhamWay/malham_splats --iterations 7000
+
+/src/SIBR_viewers/install/bin/SIBR_gaussianViewer_app -m /src/output/00665780-0/
+
 ## Funding and Acknowledgments
 
 This research was funded by the ERC Advanced grant FUNGRAPH No 788065. The authors are grateful to Adobe for generous donations, the OPAL infrastructure from Université Côte d’Azur and for the HPC resources from GENCI–IDRIS (Grant 2022-AD011013409). The authors thank the anonymous reviewers for their valuable feedback, P. Hedman and A. Tewari for proofreading earlier drafts also T. Müller, A. Yu and S. Fridovich-Keil for helping with the comparisons.

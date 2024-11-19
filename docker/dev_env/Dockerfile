@@ -58,6 +58,8 @@ RUN apt-get update && apt-get install -y xterm
 # Python deps
 RUN pip3 install plyfile==0.8.1 tqdm
 RUN pip3 install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
+RUN pip3 install scipy
+RUN pip3 install bson
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y python3.10-venv

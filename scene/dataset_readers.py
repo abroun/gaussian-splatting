@@ -22,6 +22,7 @@ from pathlib import Path
 from plyfile import PlyData, PlyElement
 from utils.sh_utils import SH2RGB
 from scene.gaussian_model import BasicPointCloud
+from scene.beholder_project import BeholderProject
 
 class CameraInfo(NamedTuple):
     uid: int
@@ -117,12 +118,17 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, depths_params, images_fold
     sys.stdout.write('\n')
     return cam_infos
 
-def fetchPly(path):
+def fetchPly(path, has_normals=True):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']
     positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
     colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T / 255.0
-    normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+
+    if has_normals:
+        normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+    else:
+        normals = np.zeros_like(positions)
+
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
 def storePly(path, xyz, rgb):
@@ -309,7 +315,51 @@ def readNerfSyntheticInfo(path, white_background, depths, eval, extension=".png"
                            is_nerf_synthetic=True)
     return scene_info
 
+def readBeholderSceneInfo(path):
+    beholder_project = BeholderProject.load_from_directory(path)
+
+    # Build an array of cameras
+    cam_infos = []
+
+    for c in beholder_project._data["cameras"]:
+        cam_id = c["id"]
+        R, T = beholder_project.get_camera_extrinsics(cam_id)
+
+        R_inv = R.T
+        T_inv = -R_inv @ T
+
+        width, height, K, dist_coeffs = beholder_project.get_camera_intrinsics_and_dist_coeffs(cam_id)
+        if len(dist_coeffs):
+            raise Exception("Camera with lens distortion is not supported")
+        
+        fov_x = focal2fov(K[0, 0], width)
+        fov_y = focal2fov(K[1, 1], height)
+
+        image_info = beholder_project.get_camera_image_info(cam_id)
+        cam_infos.append(CameraInfo(uid=cam_id, R=R_inv.T, T=T_inv, FovY=fov_y, FovX=fov_x, depth_params=None,
+            image_path=image_info["path"], image_name=image_info["name"], depth_path="",
+            width=width, height=height, is_test=False))
+
+    nerf_normalization = getNerfppNorm(cam_infos)
+
+    # Read in the point cloud
+    ply_path = os.path.join(path, "point_cloud.ply")
+    try:
+        pcd = fetchPly(ply_path, has_normals=False)
+    except:
+        raise Exception("No point cloud supplied")
+        pcd = None
+
+    scene_info = SceneInfo(point_cloud=pcd,
+                           train_cameras=cam_infos,
+                           test_cameras=[],
+                           nerf_normalization=nerf_normalization,
+                           ply_path=ply_path,
+                           is_nerf_synthetic=False)
+    return scene_info
+
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
-    "Blender" : readNerfSyntheticInfo
+    "Blender" : readNerfSyntheticInfo,
+    "Beholder": readBeholderSceneInfo
 }
